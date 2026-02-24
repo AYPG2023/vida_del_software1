@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SDLC Originals - El Viaje del Software</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { blue: "#0a4f8f", red: "#c62828", gold: "#f3b32c" }
+                    },
+                    fontFamily: { sans: ["Inter","system-ui","Segoe UI","Roboto","Helvetica","Arial"] }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/logo.jpg">
+
+    <style>
+        :root {
+            --bg: #05070b;
+            --panel: #0b101a;
+            --muted: #94a3b8;
+            --accent: #22d3ee;
+            --glow: rgba(34, 211, 238, 0.35);
+            --retro-bg: #0a0a0a;
+            --retro-accent: #00ff8f;
+        }
+
+        body {
+            background: radial-gradient(1200px 600px at 20% -10%, #0f1b2e 0%, #06070c 40%, #05070b 100%);
+            overflow-x: hidden;
+        }
+
+        .bg-layer {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .aurora-layer {
+            background: radial-gradient(60% 40% at 20% 10%, rgba(34, 211, 238, 0.2), transparent 60%),
+                        radial-gradient(50% 40% at 80% 20%, rgba(243, 179, 44, 0.18), transparent 65%),
+                        radial-gradient(40% 35% at 60% 80%, rgba(198, 40, 40, 0.18), transparent 60%);
+            filter: blur(60px);
+            mix-blend-mode: screen;
+            opacity: 0.75;
+            animation: aurora 18s ease-in-out infinite alternate;
+        }
+
+        .particle-layer {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .particle-layer span {
+            position: absolute;
+            border-radius: 999px;
+            filter: blur(0.6px);
+            opacity: var(--opacity, 0.5);
+            animation: particle-float var(--dur, 14s) linear infinite;
+            transform: translate3d(0, 0, 0);
+            will-change: transform, opacity;
+        }
+
+        .noise-layer {
+            background-image: linear-gradient(0deg, rgba(255,255,255,0.08) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 3px 3px, 4px 4px;
+            opacity: 0.08;
+            z-index: 2;
+        }
+
+        .scanline-layer {
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(255,255,255,0.02),
+                rgba(255,255,255,0.02) 1px,
+                transparent 1px,
+                transparent 4px
+            );
+            opacity: 0.06;
+            z-index: 3;
+        }
+
+        .retro {
+            --bg: var(--retro-bg);
+            --panel: #111111;
+            --accent: var(--retro-accent);
+            --glow: rgba(0, 255, 143, 0.35);
+            font-family: "Courier New", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        }
+
+        .retro .retro-scan {
+            filter: contrast(1.2) saturate(0.8);
+        }
+
+        .glitch {
+            position: relative;
+            text-shadow: 0 0 12px rgba(255,255,255,0.25);
+        }
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0.8;
+        }
+        .glitch::before {
+            transform: translate(-2px, -1px);
+            color: #22d3ee;
+            animation: glitch 2.2s infinite;
+        }
+        .glitch::after {
+            transform: translate(2px, 1px);
+            color: #f87171;
+            animation: glitch 1.8s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 100% { clip-path: inset(0 0 0 0); }
+            10% { clip-path: inset(20% 0 60% 0); }
+            20% { clip-path: inset(10% 0 70% 0); }
+            30% { clip-path: inset(40% 0 40% 0); }
+            40% { clip-path: inset(80% 0 5% 0); }
+            50% { clip-path: inset(50% 0 30% 0); }
+            60% { clip-path: inset(15% 0 65% 0); }
+            70% { clip-path: inset(60% 0 20% 0); }
+            80% { clip-path: inset(5% 0 75% 0); }
+            90% { clip-path: inset(30% 0 50% 0); }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(22px) scale(0.98);
+            filter: blur(8px);
+            transition: opacity 0.8s ease, transform 0.8s ease, filter 0.8s ease;
+        }
+        .reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+        }
+
+        .fade-up { opacity: 0; transform: translateY(16px); transition: 0.7s ease; }
+        .fade-in { opacity: 0; transition: 0.6s ease; }
+        .scale-in { opacity: 0; transform: scale(0.94); transition: 0.7s ease; }
+        .slide-left { opacity: 0; transform: translateX(20px); transition: 0.7s ease; }
+        .slide-right { opacity: 0; transform: translateX(-20px); transition: 0.7s ease; }
+        .is-visible.fade-up,
+        .is-visible.fade-in,
+        .is-visible.scale-in,
+        .is-visible.slide-left,
+        .is-visible.slide-right { opacity: 1; transform: translate(0,0) scale(1); }
+
+        .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 25px rgba(34, 211, 238, 0.18); }
+
+        .glow { box-shadow: 0 0 18px rgba(34, 211, 238, 0.25); animation: glow-pulse 4s ease-in-out infinite; }
+        .pulse-soft { animation: pulse-soft 5s ease-in-out infinite; }
+        .float { animation: float 6s ease-in-out infinite; }
+
+        .hero-title {
+            background: linear-gradient(110deg, #ffffff 10%, #22d3ee 45%, #f3b32c 70%, #ffffff 90%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            position: relative;
+        }
+        .hero-title::after {
+            content: "";
+            position: absolute;
+            inset: -10% 0;
+            background: linear-gradient(120deg, transparent 20%, rgba(255,255,255,0.45) 50%, transparent 80%);
+            transform: translateX(-120%);
+            animation: shine 4.5s ease-in-out infinite;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .hero-glow { text-shadow: 0 0 28px rgba(34, 211, 238, 0.25); }
+
+        .ripple {
+            position: absolute;
+            border-radius: 999px;
+            transform: scale(0);
+            background: rgba(255,255,255,0.5);
+            animation: ripple 0.6s ease-out forwards;
+            pointer-events: none;
+        }
+
+        .carousel-card-centered {
+            box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.4), 0 12px 30px rgba(34, 211, 238, 0.2);
+            transform: translateY(-4px) scale(1.02);
+        }
+
+        .modal-backdrop {
+            backdrop-filter: blur(10px);
+            background: rgba(3, 6, 12, 0.72);
+        }
+
+        .modal-content {
+            transform: translateY(12px) scale(0.98);
+            opacity: 0;
+            transition: transform 0.35s ease, opacity 0.35s ease;
+        }
+        .modal-open .modal-content {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+
+        .modal-open main,
+        .modal-open header,
+        .modal-open footer {
+            transform: scale(0.98);
+            filter: blur(2px);
+            transition: transform 0.35s ease, filter 0.35s ease;
+        }
+
+        .comic-panel {
+            position: relative;
+            overflow: hidden;
+        }
+        .comic-panel .bubble-pop {
+            display: inline-block;
+            transform: scale(0.8);
+            animation: bubble-pop 0.45s cubic-bezier(0.2, 0.9, 0.2, 1.2) forwards;
+        }
+        .comic-avatar {
+            position: relative;
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 35% 35%, #ffffff, #22d3ee 40%, #0a4f8f 70%);
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+            animation: avatar-bob 3.6s ease-in-out infinite;
+        }
+        .comic-avatar::after {
+            content: "";
+            position: absolute;
+            inset: 9px 6px auto 6px;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(2, 8, 16, 0.9);
+            animation: blink 4.8s ease-in-out infinite;
+        }
+
+        .panel-transition {
+            transition: transform 0.45s ease, opacity 0.45s ease;
+        }
+        .panel-hidden {
+            opacity: 0;
+            transform: translateX(18px);
+        }
+
+        .score-shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        .score-shimmer::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 20%, rgba(255,255,255,0.35) 50%, transparent 80%);
+            transform: translateX(-100%);
+            animation: shimmer 2.6s ease-in-out infinite;
+        }
+
+        .bar {
+            transition: width 0.9s ease;
+        }
+
+        .bar-tooltip {
+            position: absolute;
+            right: 0;
+            top: -28px;
+            background: rgba(15, 23, 42, 0.9);
+            color: #e2e8f0;
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 999px;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: 0.2s ease;
+            pointer-events: none;
+        }
+        .bar-wrapper:hover .bar-tooltip { opacity: 1; transform: translateY(0); }
+        .bar-ouch { animation: ouch 0.6s ease-in-out 2; }
+
+        .bug-float {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 95;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: 999px;
+            padding: 8px 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            animation: bug-float 4s ease-in-out infinite;
+        }
+        .bug-float.active { display: inline-flex; }
+
+        .bug-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #f43f5e, #b91c1c 55%, #7f1d1d 100%);
+            box-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+        }
+
+        .cinema-bars {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 85;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .cinema-bars.active { opacity: 1; }
+        .cinema-bar {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 8vh;
+            background: #000;
+            transform: translateY(-100%);
+            transition: transform 0.4s ease;
+        }
+        .cinema-top { top: 0; }
+        .cinema-bottom { bottom: 0; transform: translateY(100%); }
+        .cinema-bars.active .cinema-top { transform: translateY(0); }
+        .cinema-bars.active .cinema-bottom { transform: translateY(0); }
+        .cinema-mode {
+            filter: contrast(1.1) saturate(1.1);
+            background: #02040a;
+        }
+        .cinema-mode .aurora-layer { opacity: 0.95; }
+        .cinema-mode .glow { box-shadow: 0 0 28px rgba(243, 179, 44, 0.35); }
+
+        .scroll-arrow { transition: transform 0.2s ease; }
+        .scroll-arrow:hover { animation: arrow-bounce 0.6s ease-in-out; }
+
+        @keyframes arrow-bounce {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(4px); }
+        }
+
+        @keyframes aurora {
+            0% { transform: translate3d(0,0,0) scale(1); }
+            50% { transform: translate3d(-3%, 2%, 0) scale(1.05); }
+            100% { transform: translate3d(4%, -3%, 0) scale(1.08); }
+        }
+        @keyframes particle-float {
+            0% { transform: translate3d(0, 110vh, 0); opacity: 0; }
+            10% { opacity: var(--opacity, 0.5); }
+            100% { transform: translate3d(var(--drift, 0px), -20vh, 0); opacity: 0; }
+        }
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 18px rgba(34, 211, 238, 0.2); }
+            50% { box-shadow: 0 0 28px rgba(243, 179, 44, 0.28); }
+        }
+        @keyframes pulse-soft {
+            0%, 100% { transform: scale(1); opacity: 0.95; }
+            50% { transform: scale(1.03); opacity: 1; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes shine {
+            0% { transform: translateX(-120%); }
+            60% { transform: translateX(120%); }
+            100% { transform: translateX(120%); }
+        }
+        @keyframes ripple {
+            to { transform: scale(3.5); opacity: 0; }
+        }
+        @keyframes bubble-pop {
+            0% { transform: scale(0.8); }
+            70% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        @keyframes avatar-bob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        @keyframes blink {
+            0%, 92%, 100% { transform: scaleY(1); }
+            95% { transform: scaleY(0.2); }
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-120%); }
+            100% { transform: translateX(120%); }
+        }
+        @keyframes ouch {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-3px); }
+            60% { transform: translateX(3px); }
+        }
+        @keyframes bug-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+            .hero-title::after, .score-shimmer::after { display: none; }
+        }
+
+        .modal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .modal.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px) scale(0.98);
+        }
+
+        .comic-panel {
+            background: linear-gradient(140deg, rgba(15,23,42,0.9), rgba(8,12,20,0.9));
+            border: 1px solid rgba(148,163,184,0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+        }
+
+        .chip {
+            border: 1px solid rgba(148,163,184,0.25);
+        }
+
+        .neon-ring {
+            box-shadow: 0 0 0 1px rgba(34,211,238,0.3), 0 0 15px var(--glow);
+        }
+
+        .scrollbar-thin::-webkit-scrollbar { height: 8px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.35); border-radius: 999px; }
+
+        .confetti-stage {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 88;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 8px;
+            height: 12px;
+            opacity: 0.95;
+            border-radius: 2px;
+            transform: translate3d(0, -20px, 0);
+            animation: confetti-fall var(--fall, 2.6s) linear forwards;
+            will-change: transform, opacity;
+        }
+        @keyframes confetti-fall {
+            0% { transform: translate3d(0, -10px, 0) rotate(0deg); opacity: 1; }
+            100% { transform: translate3d(var(--drift, 0px), 105vh, 0) rotate(360deg); opacity: 0; }
+        }
+
+        .intro-hidden #intro {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(1.02);
+        }
+
+        .tooltip {
+            transform: translateY(-6px);
+            opacity: 0;
+            transition: 0.2s ease;
+        }
+        .timeline-item:hover .tooltip,
+        .timeline-item.active .tooltip {
+            opacity: 1;
+            transform: translateY(-12px);
+        }
+
+        @media print {
+            body { background: white; color: #111827; }
+            #intro, #header, #footer, #bug-jump, #printHint { display: none !important; }
+            .printable { background: white !important; color: #111827 !important; }
+        }
+    </style>
+</head>
+<body class="font-sans text-slate-100 bg-[var(--bg)] relative">
+
+    <div class="bg-layer aurora-layer" aria-hidden="true"></div>
+    <div id="particleLayer" class="particle-layer" aria-hidden="true"></div>
+    <div class="bg-layer noise-layer" aria-hidden="true"></div>
+    <div class="bg-layer scanline-layer" aria-hidden="true"></div>
+    <div id="cinemaBars" class="cinema-bars" aria-hidden="true">
+        <div class="cinema-bar cinema-top"></div>
+        <div class="cinema-bar cinema-bottom"></div>
+    </div>
+
+
+    <!-- 1) Intro overlay -->
+    <section id="intro" class="fixed inset-0 z-[80] bg-black text-white flex items-center justify-center transition duration-700">
+        <div class="text-center space-y-6">
+            <p class="uppercase tracking-[0.6em] text-xs text-slate-400">SDLC ORIGINALS</p>
+            <h1 class="glitch text-3xl md:text-6xl font-extrabold" data-text="EL VIAJE DEL SOFTWARE">EL VIAJE DEL SOFTWARE</h1>
+            <p class="text-slate-400">Preparando tu maraton de fases... ponte el cinturon.</p>
+            <button id="skipIntro" class="mt-4 px-5 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20" aria-label="Saltar intro">
+                SALTAR INTRO
+            </button>
+        </div>
+    </section>
+
+    <script>
+        (function () {
+            const intro = document.getElementById("intro");
+            const skipIntro = document.getElementById("skipIntro");
+            if (!intro || !skipIntro) return;
+            let done = false;
+            const endIntro = () => {
+                if (done) return;
+                done = true;
+                document.body.classList.add("intro-hidden");
+            };
+            skipIntro.addEventListener("click", endIntro);
+            setTimeout(endIntro, 8000);
+        })();
+    </script>
+
+    <!-- 2) Header -->
+    <header id="header" class="sticky top-0 z-40 bg-slate-950/80 backdrop-blur border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="h-9 w-9 rounded-md bg-brand-red flex items-center justify-center font-extrabold">S</div>
+                <button id="titleClick" class="text-lg font-extrabold tracking-wide" aria-label="Titulo SDLC Originals">SDLC Originals</button>
+            </div>
+            <div class="hidden md:flex items-center gap-4">
+                <div class="relative">
+                    <input id="searchInput" class="bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-sm w-56 focus:outline-none focus:border-brand-gold" placeholder="Buscar episodio o bug..." aria-label="Buscador" />
+                    <span class="absolute right-3 top-2.5 text-xs text-slate-500">CTRL+K</span>
+                </div>
+            </div>
+            <button id="menuBtn" class="md:hidden p-2 rounded-md border border-slate-700" aria-label="Abrir menu">Menu</button>
+        </div>
+        <div id="mobileNav" class="hidden md:hidden border-t border-slate-800 px-4 py-3">
+            <input class="w-full bg-slate-900 border border-slate-700 rounded-full px-4 py-2 text-sm" placeholder="Buscar episodio o bug..." aria-label="Buscador movil" />
+        </div>
+    </header>
+
+    <!-- 3) Main (Home + Carousels) -->
+    <main class="relative z-10">
+        <section id="home" class="relative overflow-hidden">
+            <div class="absolute inset-0">
+                <div id="heroGlow" class="absolute -inset-10 bg-gradient-to-r from-brand-blue/20 via-brand-red/10 to-brand-gold/10 blur-3xl pulse-soft"></div>
+            </div>
+            <div class="relative max-w-7xl mx-auto px-4 py-20 md:py-28">
+                <div class="max-w-3xl space-y-5">
+                    <p class="uppercase tracking-[0.4em] text-xs text-slate-400">Serie interactiva</p>
+                    <h2 class="text-4xl md:text-6xl font-extrabold hero-title hero-glow">SDLC: El viaje del software desde la idea hasta el hype</h2>
+                    <p class="text-slate-300">Un catalogo estilo streaming donde cada fase es un episodio, cada bug un villano y tu decision el final alterno.</p>
+                    <div class="flex flex-wrap gap-3">
+                        <button id="playBtn" class="relative overflow-hidden px-6 py-3 rounded-full bg-white text-slate-900 font-semibold hover:scale-105 transition" aria-label="Reproducir">? Reproducir</button>
+                        <button id="trailerBtn" class="px-6 py-3 rounded-full bg-white/10 border border-slate-700 hover:bg-white/20" aria-label="Ver trailer">Trailer</button>
+                    </div>
+                </div>
+
+                <div class="mt-12 grid md:grid-cols-3 gap-6" data-stagger>
+                    <div class="p-6 rounded-2xl bg-[var(--panel)] border border-slate-800 neon-ring">
+                        <h3 class="font-semibold text-lg">Que es SDLC</h3>
+                        <p class="text-sm text-slate-300 mt-2">Es la hoja de ruta para que el software no sea un salto al vacio. Define orden, roles y momentos para corregir.</p>
+                    </div>
+                    <div class="p-6 rounded-2xl bg-[var(--panel)] border border-slate-800">
+                        <h3 class="font-semibold text-lg">Por que existe</h3>
+                        <p class="text-sm text-slate-300 mt-2">Porque arreglar tarde cuesta caro. Y porque nadie quiere un bug sorpresa en produccion.</p>
+                    </div>
+                    <div class="p-6 rounded-2xl bg-[var(--panel)] border border-slate-800">
+                        <h3 class="font-semibold text-lg">El tono de la serie</h3>
+                        <p class="text-sm text-slate-300 mt-2">Comedia, drama, mini juego y un villano llamado BUG. Tu decides el final.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 py-10 space-y-10 reveal">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold">Episodios (Fases)</h3>
+                    <div class="flex gap-2">
+                        <button class="scroll-arrow px-3 py-1 rounded-full bg-white/10 border border-slate-700" data-scroll="episodes" data-dir="-1" aria-label="Anterior">?</button>
+                        <button class="scroll-arrow px-3 py-1 rounded-full bg-white/10 border border-slate-700" data-scroll="episodes" data-dir="1" aria-label="Siguiente">?</button>
+                    </div>
+                </div>
+                <div id="carousel-episodes" class="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-thin pb-4">
+                    <button class="episode-card hover-lift snap-start min-w-[220px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 hover-lift text-left" data-episode="0" aria-label="Abrir episodio planificacion">
+                        <p class="text-xs text-slate-400">E1</p>
+                        <h4 class="font-semibold">Planificacion</h4>
+                        <p class="text-xs text-slate-400">El mapa antes de la aventura.</p>
+                    </button>
+                    <button class="episode-card hover-lift snap-start min-w-[220px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 hover-lift text-left" data-episode="1" aria-label="Abrir episodio analisis">
+                        <p class="text-xs text-slate-400">E2</p>
+                        <h4 class="font-semibold">Analisis</h4>
+                        <p class="text-xs text-slate-400">Detectives de requisitos.</p>
+                    </button>
+                    <button class="episode-card hover-lift snap-start min-w-[220px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 hover-lift text-left" data-episode="2" aria-label="Abrir episodio diseno">
+                        <p class="text-xs text-slate-400">E3</p>
+                        <h4 class="font-semibold">Diseno</h4>
+                        <p class="text-xs text-slate-400">Arquitectura con estilo.</p>
+                    </button>
+                    <button class="episode-card hover-lift snap-start min-w-[220px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 hover-lift text-left" data-episode="3" aria-label="Abrir episodio implementacion">
+                        <p class="text-xs text-slate-400">E4</p>
+                        <h4 class="font-semibold">Implementacion</h4>
+                        <p class="text-xs text-slate-400">Codigo y cafe.</p>
+                    </button>
+                    <button class="episode-card hover-lift snap-start min-w-[220px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 hover-lift text-left" data-episode="4" aria-label="Abrir episodio pruebas">
+                        <p class="text-xs text-slate-400">E5</p>
+                        <h4 class="font-semibold">Pruebas</h4>
+                        <p class="text-xs text-slate-400">QA al acecho.</p>
+                    </button>
+                    <button class="episode-card hover-lift snap-start min-w-[220px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 hover-lift text-left" data-episode="5" aria-label="Abrir episodio despliegue">
+                        <p class="text-xs text-slate-400">E6</p>
+                        <h4 class="font-semibold">Despliegue</h4>
+                        <p class="text-xs text-slate-400">Lanzamiento mundial.</p>
+                    </button>
+                    <button class="episode-card hover-lift snap-start min-w-[220px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 hover-lift text-left" data-episode="6" aria-label="Abrir episodio mantenimiento">
+                        <p class="text-xs text-slate-400">E7</p>
+                        <h4 class="font-semibold">Mantenimiento</h4>
+                        <p class="text-xs text-slate-400">El post-creditos.</p>
+                    </button>
+                </div>
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold">Modelos (Temporadas alternativas)</h3>
+                    <div class="flex gap-2">
+                        <button class="scroll-arrow px-3 py-1 rounded-full bg-white/10 border border-slate-700" data-scroll="models" data-dir="-1" aria-label="Anterior">?</button>
+                        <button class="scroll-arrow px-3 py-1 rounded-full bg-white/10 border border-slate-700" data-scroll="models" data-dir="1" aria-label="Siguiente">?</button>
+                    </div>
+                </div>
+                <div id="carousel-models" class="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-thin pb-4">
+                    <button class="model-card hover-lift snap-start min-w-[240px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 text-left" data-model="Cascada" aria-label="Abrir modelo cascada">
+                        <h4 class="font-semibold">Cascada</h4>
+                        <p class="text-xs text-slate-400">Lineal, elegante, cero regresos.</p>
+                    </button>
+                    <button class="model-card hover-lift snap-start min-w-[240px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 text-left" data-model="Iterativo" aria-label="Abrir modelo iterativo">
+                        <h4 class="font-semibold">Iterativo</h4>
+                        <p class="text-xs text-slate-400">Capitulos en bucle, mejora constante.</p>
+                    </button>
+                    <button class="model-card hover-lift snap-start min-w-[240px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 text-left" data-model="Espiral" aria-label="Abrir modelo espiral">
+                        <h4 class="font-semibold">Espiral</h4>
+                        <p class="text-xs text-slate-400">Riesgos primero, ansiedad despues.</p>
+                    </button>
+                    <button class="model-card hover-lift snap-start min-w-[240px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 text-left" data-model="V" aria-label="Abrir modelo v">
+                        <h4 class="font-semibold">Modelo V</h4>
+                        <p class="text-xs text-slate-400">Pruebas desde el guion.</p>
+                    </button>
+                    <button class="model-card hover-lift snap-start min-w-[240px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 text-left" data-model="Big Bang" aria-label="Abrir modelo big bang">
+                        <h4 class="font-semibold">Big Bang</h4>
+                        <p class="text-xs text-slate-400">Improvisacion cosmica.</p>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold">Extras (Errores famosos)</h3>
+                    <div class="flex gap-2">
+                        <button class="scroll-arrow px-3 py-1 rounded-full bg-white/10 border border-slate-700" data-scroll="extras" data-dir="-1" aria-label="Anterior">?</button>
+                        <button class="scroll-arrow px-3 py-1 rounded-full bg-white/10 border border-slate-700" data-scroll="extras" data-dir="1" aria-label="Siguiente">?</button>
+                    </div>
+                </div>
+                <div id="carousel-extras" class="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-thin pb-4">
+                    <div class="snap-start min-w-[220px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 hover-lift">
+                        <h4 class="font-semibold">El bug invisible</h4>
+                        <p class="text-xs text-slate-400">Funciona en mi compu.</p>
+                    </div>
+                    <div class="snap-start min-w-[220px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 hover-lift">
+                        <h4 class="font-semibold">Deploy del viernes</h4>
+                        <p class="text-xs text-slate-400">Final de temporada con cliffhanger.</p>
+                    </div>
+                    <div class="snap-start min-w-[220px] p-4 rounded-xl bg-[var(--panel)] border border-slate-800 hover-lift">
+                        <h4 class="font-semibold">Password en prod</h4>
+                        <p class="text-xs text-slate-400">Spoiler: no lo hagas.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4) Episodios del SDLC -->
+        <section id="episodes" class="max-w-7xl mx-auto px-4 py-16 reveal">
+            <div class="flex items-end justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Episodios</p>
+                    <h3 class="text-3xl font-extrabold">Temporada 1: Las 7 fases</h3>
+                </div>
+                <button class="px-4 py-2 rounded-full bg-white/10 border border-slate-700" id="openAllEpisodes" aria-label="Ver todos">Ver todos</button>
+            </div>
+
+            <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <button class="episode-card p-5 rounded-2xl bg-[var(--panel)] border border-slate-800 text-left hover:scale-[1.02] transition" data-episode="0" aria-label="Abrir episodio planificacion">
+                    <h4 class="font-semibold">E1 Planificacion</h4>
+                    <p class="text-sm text-slate-400 mt-2">Definir vision, recursos y limites.</p>
+                </button>
+                <button class="episode-card p-5 rounded-2xl bg-[var(--panel)] border border-slate-800 text-left hover:scale-[1.02] transition" data-episode="1" aria-label="Abrir episodio analisis">
+                    <h4 class="font-semibold">E2 Analisis</h4>
+                    <p class="text-sm text-slate-400 mt-2">Escuchar al cliente sin perder la calma.</p>
+                </button>
+                <button class="episode-card p-5 rounded-2xl bg-[var(--panel)] border border-slate-800 text-left hover:scale-[1.02] transition" data-episode="2" aria-label="Abrir episodio diseno">
+                    <h4 class="font-semibold">E3 Diseno</h4>
+                    <p class="text-sm text-slate-400 mt-2">Blueprints, diagramas y decisiones.</p>
+                </button>
+                <button class="episode-card p-5 rounded-2xl bg-[var(--panel)] border border-slate-800 text-left hover:scale-[1.02] transition" data-episode="3" aria-label="Abrir episodio implementacion">
+                    <h4 class="font-semibold">E4 Implementacion</h4>
+                    <p class="text-sm text-slate-400 mt-2">Codigo con drama y cafe.</p>
+                </button>
+                <button class="episode-card p-5 rounded-2xl bg-[var(--panel)] border border-slate-800 text-left hover:scale-[1.02] transition" data-episode="4" aria-label="Abrir episodio pruebas">
+                    <h4 class="font-semibold">E5 Pruebas</h4>
+                    <p class="text-sm text-slate-400 mt-2">QA con lupa y paciencia.</p>
+                </button>
+                <button class="episode-card p-5 rounded-2xl bg-[var(--panel)] border border-slate-800 text-left hover:scale-[1.02] transition" data-episode="5" aria-label="Abrir episodio despliegue">
+                    <h4 class="font-semibold">E6 Despliegue</h4>
+                    <p class="text-sm text-slate-400 mt-2">Momento de brillar (o no).</p>
+                </button>
+                <button class="episode-card p-5 rounded-2xl bg-[var(--panel)] border border-slate-800 text-left hover:scale-[1.02] transition" data-episode="6" aria-label="Abrir episodio mantenimiento">
+                    <h4 class="font-semibold">E7 Mantenimiento</h4>
+                    <p class="text-sm text-slate-400 mt-2">La vida despues del estreno.</p>
+                </button>
+            </div>
+        </section>
+        <!-- 5) Minijuego -->
+        <section id="minigame" class="max-w-7xl mx-auto px-4 py-16 reveal">
+            <div class="grid lg:grid-cols-2 gap-10 items-center">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Minijuego</p>
+                    <h3 class="text-3xl font-extrabold">Elige tu modelo</h3>
+                    <p class="text-slate-300 mt-3">Selecciona una temporada alternativa, decide rapido y mira si tu serie se vuelve hit o termina en cancelacion.</p>
+
+                    <div class="mt-6 grid sm:grid-cols-2 gap-3">
+                        <button class="model-select px-4 py-3 rounded-xl bg-[var(--panel)] border border-slate-800 text-left" data-model="Cascada">Cascada</button>
+                        <button class="model-select px-4 py-3 rounded-xl bg-[var(--panel)] border border-slate-800 text-left" data-model="Iterativo">Iterativo</button>
+                        <button class="model-select px-4 py-3 rounded-xl bg-[var(--panel)] border border-slate-800 text-left" data-model="Espiral">Espiral</button>
+                        <button class="model-select px-4 py-3 rounded-xl bg-[var(--panel)] border border-slate-800 text-left" data-model="V">Modelo V</button>
+                        <button class="model-select px-4 py-3 rounded-xl bg-[var(--panel)] border border-slate-800 text-left" data-model="Big Bang">Big Bang</button>
+                    </div>
+
+                    <div class="mt-6 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-slate-300">Documentas?</span>
+                            <div class="flex gap-2" role="group" aria-label="Documentacion">
+                                <button class="decision-btn px-3 py-1 rounded-full bg-white/10 border border-slate-700" data-decision="docs" data-value="yes">Si</button>
+                                <button class="decision-btn px-3 py-1 rounded-full bg-white/10 border border-slate-700" data-decision="docs" data-value="no">No</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-slate-300">Pruebas antes de desplegar?</span>
+                            <div class="flex gap-2" role="group" aria-label="Pruebas">
+                                <button class="decision-btn px-3 py-1 rounded-full bg-white/10 border border-slate-700" data-decision="tests" data-value="yes">Si</button>
+                                <button class="decision-btn px-3 py-1 rounded-full bg-white/10 border border-slate-700" data-decision="tests" data-value="no">No</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="runGame" class="mt-6 px-6 py-3 rounded-full bg-brand-gold text-slate-900 font-semibold" aria-label="Calcular resultado">Ver resultado</button>
+                </div>
+
+                <div class="relative">
+                    <div class="p-6 rounded-2xl bg-[var(--panel)] border border-slate-800">
+                        <h4 class="text-lg font-semibold">Resultado</h4>
+                        <div class="mt-4 h-3 rounded-full bg-slate-800 overflow-hidden score-shimmer">
+                            <div id="scoreBar" class="h-full bg-gradient-to-r from-red-500 via-yellow-400 to-emerald-400 w-0 transition-all duration-700"></div>
+                        </div>
+                        <p class="mt-3 text-sm text-slate-400"><span id="scoreLabel">0</span>/100</p>
+                        <p id="scoreText" class="mt-4 text-slate-200">Esperando tus decisiones...</p>
+                        <div id="confettiStage" class="confetti-stage"></div>
+                    </div>
+                    <div class="mt-4 flex gap-3 text-xs text-slate-400" id="printHint">
+                        <span class="chip px-3 py-1 rounded-full">Tip: prueba un Big Bang sin pruebas</span>
+                        <span class="chip px-3 py-1 rounded-full">Tip: documenta y el equipo te ama</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6) Timeline -->
+        <section id="timeline" class="max-w-7xl mx-auto px-4 py-16 reveal">
+            <div class="flex items-end justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Timeline</p>
+                    <h3 class="text-3xl font-extrabold">La ruta del SDLC en 60 segundos</h3>
+                </div>
+                <span class="text-sm text-slate-400">Hover o click para pistas</span>
+            </div>
+
+            <div class="mt-8 relative">
+                <div class="absolute left-0 right-0 top-5 h-1 bg-slate-800 rounded-full"></div>
+                <div id="timelineCursor" class="absolute top-3 left-0 w-6 h-6 rounded-full bg-brand-gold shadow-lg transition-all duration-300"></div>
+                <div class="flex justify-between gap-4">
+                    <div class="timeline-item relative text-center" data-phase="Planificacion">
+                        <div class="w-3 h-3 rounded-full bg-slate-500 mx-auto mb-3"></div>
+                        <span class="text-sm">Planificacion</span>
+                        <div class="tooltip absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 px-3 py-1 rounded-full text-xs">Define alcance</div>
+                    </div>
+                    <div class="timeline-item relative text-center" data-phase="Analisis">
+                        <div class="w-3 h-3 rounded-full bg-slate-500 mx-auto mb-3"></div>
+                        <span class="text-sm">Analisis</span>
+                        <div class="tooltip absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 px-3 py-1 rounded-full text-xs">Escucha real</div>
+                    </div>
+                    <div class="timeline-item relative text-center" data-phase="Diseno">
+                        <div class="w-3 h-3 rounded-full bg-slate-500 mx-auto mb-3"></div>
+                        <span class="text-sm">Diseno</span>
+                        <div class="tooltip absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 px-3 py-1 rounded-full text-xs">Arquitectura</div>
+                    </div>
+                    <div class="timeline-item relative text-center" data-phase="Implementacion">
+                        <div class="w-3 h-3 rounded-full bg-slate-500 mx-auto mb-3"></div>
+                        <span class="text-sm">Implementacion</span>
+                        <div class="tooltip absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 px-3 py-1 rounded-full text-xs">Codigo real</div>
+                    </div>
+                    <div class="timeline-item relative text-center" data-phase="Pruebas">
+                        <div class="w-3 h-3 rounded-full bg-slate-500 mx-auto mb-3"></div>
+                        <span class="text-sm">Pruebas</span>
+                        <div class="tooltip absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 px-3 py-1 rounded-full text-xs">Detectar fallos</div>
+                    </div>
+                    <div class="timeline-item relative text-center" data-phase="Despliegue">
+                        <div class="w-3 h-3 rounded-full bg-slate-500 mx-auto mb-3"></div>
+                        <span class="text-sm">Despliegue</span>
+                        <div class="tooltip absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 px-3 py-1 rounded-full text-xs">Lanzamiento</div>
+                    </div>
+                    <div class="timeline-item relative text-center" data-phase="Mantenimiento">
+                        <div class="w-3 h-3 rounded-full bg-slate-500 mx-auto mb-3"></div>
+                        <span class="text-sm">Mantenimiento</span>
+                        <div class="tooltip absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 px-3 py-1 rounded-full text-xs">Mejora continua</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7) Por que existe SDLC -->
+        <section id="why" class="max-w-7xl mx-auto px-4 py-16 reveal">
+            <div class="grid lg:grid-cols-2 gap-10 items-center">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Por que existe</p>
+                    <h3 class="text-3xl font-extrabold">Arreglar tarde cuesta caro</h3>
+                    <p class="text-slate-300 mt-3">En SDLC, detectar un error temprano cuesta minutos. En produccion, cuesta reputacion, horas y memes del equipo.</p>
+                    <ul class="mt-4 text-slate-300 list-disc pl-5">
+                        <li>Requisitos: barato y rapido.</li>
+                        <li>Diseno: todavia se puede corregir con calma.</li>
+                        <li>Produccion: caro y con drama.</li>
+                    </ul>
+                </div>
+                <div class="p-6 rounded-2xl bg-[var(--panel)] border border-slate-800">
+                    <h4 class="font-semibold">Costo de arreglar un bug</h4>
+                    <div class="mt-6 space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm text-slate-400"><span>Requisitos</span><span>1x</span></div>
+                            <div class="bar-wrapper relative h-3 rounded-full bg-slate-800 overflow-hidden"><span class="bar-tooltip">1x relativo</span><div class="bar w-1/5 h-full bg-emerald-400"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm text-slate-400"><span>Diseno</span><span>3x</span></div>
+                            <div class="bar-wrapper relative h-3 rounded-full bg-slate-800 overflow-hidden"><span class="bar-tooltip">3x relativo</span><div class="bar w-2/5 h-full bg-yellow-400"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm text-slate-400"><span>Produccion <span id="ouchText" class="text-rose-400 text-xs ml-2 opacity-0 transition">ouch</span></span><span>10x</span></div>
+                            <div class="bar-wrapper relative h-3 rounded-full bg-slate-800 overflow-hidden" id="prodBarWrap"><span class="bar-tooltip">10x relativo</span><div class="bar w-4/5 h-full bg-red-500"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- 8) Final / Creditos -->
+        <section id="final" class="max-w-7xl mx-auto px-4 py-20 reveal printable">
+            <div class="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-black border border-slate-800 p-10 text-center">
+                <h3 class="text-4xl font-extrabold">Moraleja: si no planeas, el bug planifica por ti.</h3>
+                <p class="text-slate-300 mt-4">Si te saltas pruebas, el villano BUG se queda con el protagonismo y tu serie termina en temporada 0.</p>
+                <div class="mt-6 flex flex-wrap justify-center gap-3">
+                    <button class="px-6 py-3 rounded-full bg-white text-slate-900 font-semibold" id="backToTop" aria-label="Volver al catalogo">Volver al catalogo</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 9) Footer -->
+    <footer id="footer" class="border-t border-slate-800 py-8 text-center text-sm text-slate-500">
+        SDLC Originals - Proyecto interactivo. Hecho para aprender, reir y desplegar con estilo.
+    </footer>
+
+    <!-- Modal -->
+    <div id="modal" class="modal hidden fixed inset-0 z-[70] modal-backdrop flex items-center justify-center p-4" aria-hidden="true" role="dialog" aria-label="Modal cinematica">
+        <div class="modal-content w-full max-w-4xl bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+                <h4 id="modalTitle" class="font-semibold">Titulo</h4>
+                <button id="modalClose" class="px-3 py-1 rounded-full bg-white/10 border border-slate-700" aria-label="Cerrar modal">X</button>
+            </div>
+            <div id="modalBody" class="p-6 space-y-6"></div>
+            <div class="px-6 pb-6 flex justify-end">
+                <button id="nextEpisode" class="px-4 py-2 rounded-full bg-brand-gold text-slate-900 font-semibold" aria-label="Siguiente episodio">Siguiente episodio</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="bugFloat" class="bug-float" aria-live="polite">
+        <div class="bug-avatar"></div>
+        <span class="text-xs text-slate-200">BUG MODE</span>
+        <button id="bugChase" class="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs" aria-label="Atr?pame">Atr?pame</button>
+    </div>
+
+    <!-- Bug Easter egg -->
+    <div id="bug-jump" class="fixed inset-0 z-[90] hidden items-center justify-center bg-black/80 text-white">
+        <div class="text-center space-y-3">
+            <div class="text-6xl">BUG!</div>
+            <p class="text-slate-300">Jumpscare suave: solo te recuerda testear.</p>
+            <button id="bugClose" class="px-4 py-2 rounded-full bg-white/10 border border-white/20" aria-label="Cerrar bug">Ok, ya testeo</button>
+        </div>
+    </div>
+
+    <script>
+        const body = document.body;
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        // Intro
+        const intro = document.getElementById("intro");
+        const skipIntro = document.getElementById("skipIntro");
+        let introDone = false;
+
+        function playBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.value = 440;
+                gain.gain.value = 0.08;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                setTimeout(() => { osc.stop(); ctx.close(); }, 180);
+            } catch (e) {}
+        }
+
+        function endIntro() {
+            if (introDone) return;
+            introDone = true;
+            body.classList.add("intro-hidden");
+            playBeep();
+        }
+
+        skipIntro.addEventListener("click", endIntro);
+        setTimeout(endIntro, 8000);
+
+        // Background particles
+        const particleLayer = document.getElementById("particleLayer");
+        let particleCount = window.matchMedia("(max-width: 640px)").matches ? 50 : 110;
+        const particleColors = ["#0a4f8f", "#c62828", "#f3b32c"];
+
+        function buildParticles() {
+            if (!particleLayer) return;
+            if (prefersReducedMotion) {
+                particleLayer.innerHTML = "";
+                return;
+            }
+            particleLayer.innerHTML = "";
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < particleCount; i += 1) {
+                const span = document.createElement("span");
+                const size = 2 + Math.random() * 8;
+                const opacity = 0.15 + Math.random() * 0.5;
+                const dur = 8 + Math.random() * 17;
+                const x = Math.random() * 100;
+                const drift = (Math.random() - 0.5) * 120;
+                span.style.width = `${size}px`;
+                span.style.height = `${size}px`;
+                span.style.left = `${x}%`;
+                span.style.setProperty("--drift", `${drift}px`);
+                span.style.setProperty("--opacity", opacity.toFixed(2));
+                span.style.setProperty("--dur", `${dur}s`);
+                span.style.animationDelay = `${-Math.random() * dur}s`;
+                span.style.background = particleColors[i % particleColors.length];
+                frag.appendChild(span);
+            }
+            particleLayer.appendChild(frag);
+        }
+
+        buildParticles();
+        const mediaQuery = window.matchMedia("(max-width: 640px)");
+        if (mediaQuery.addEventListener) {
+            mediaQuery.addEventListener("change", (e) => {
+                particleCount = e.matches ? 50 : 110;
+                buildParticles();
+            });
+        }
+
+        document.addEventListener("visibilitychange", () => {
+            if (!particleLayer) return;
+            const state = document.hidden ? "paused" : "running";
+            particleLayer.querySelectorAll("span").forEach((span) => {
+                span.style.animationPlayState = state;
+            });
+        });
+
+        // Mobile menu
+        const menuBtn = document.getElementById("menuBtn");
+        const mobileNav = document.getElementById("mobileNav");
+        menuBtn.addEventListener("click", () => mobileNav.classList.toggle("hidden"));
+
+        // Carousel controls
+        document.querySelectorAll("[data-scroll]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const id = btn.getAttribute("data-scroll");
+                const dir = Number(btn.getAttribute("data-dir"));
+                const el = document.getElementById(`carousel-${id}`);
+                el.scrollBy({ left: dir * 280, behavior: "smooth" });
+            });
+        });
+
+        // Ripple effect
+        document.addEventListener("click", (e) => {
+            const btn = e.target.closest("button");
+            if (!btn || prefersReducedMotion) return;
+            const rect = btn.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            btn.style.position = btn.style.position || "relative";
+            btn.style.overflow = "hidden";
+            const ripple = document.createElement("span");
+            ripple.className = "ripple";
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width = `${size}px`;
+            ripple.style.height = `${size}px`;
+            ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+            ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+            btn.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 700);
+        });
+
+        // Carousel snap glow
+        function setupCarouselGlow(id) {
+            const carousel = document.getElementById(`carousel-${id}`);
+            if (!carousel) return;
+            const cards = Array.from(carousel.children);
+            const update = () => {
+                const rect = carousel.getBoundingClientRect();
+                const center = rect.left + rect.width / 2;
+                let closest = null;
+                let minDist = Infinity;
+                cards.forEach(card => {
+                    const cardRect = card.getBoundingClientRect();
+                    const cardCenter = cardRect.left + cardRect.width / 2;
+                    const dist = Math.abs(center - cardCenter);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closest = card;
+                    }
+                });
+                cards.forEach(card => card.classList.remove("carousel-card-centered"));
+                if (closest && minDist < 120) closest.classList.add("carousel-card-centered");
+            };
+            let rafId = null;
+            const onScroll = () => {
+                if (rafId) return;
+                rafId = requestAnimationFrame(() => {
+                    rafId = null;
+                    update();
+                });
+            };
+            carousel.addEventListener("scroll", onScroll);
+            window.addEventListener("resize", update);
+            update();
+        }
+
+        setupCarouselGlow("episodes");
+        setupCarouselGlow("models");
+        setupCarouselGlow("extras");
+
+        // Episodes data
+        const episodes = [
+            {
+                title: "E1 Planificacion",
+                subtitle: "El mapa antes del boss final",
+                panels: [
+                    { speaker: "DEV", text: "Necesito un mapa antes de codear." },
+                    { speaker: "CLIENTE", text: "Quiero todo y lo quiero para ayer." },
+                    { speaker: "ARQ", text: "Definamos alcance o el bug se muda." }
+                ],
+                bullets: ["Definir objetivos y alcance", "Estimaciones realistas", "Roles y riesgos claros"],
+                risk: "Sin plan, cada dia es un incendio distinto."
+            },
+            {
+                title: "E2 Analisis",
+                subtitle: "Detectives de requisitos",
+                panels: [
+                    { speaker: "DEV", text: "Dime que quieres, pero en serio." },
+                    { speaker: "CLIENTE", text: "Quiero magia, pero barata." },
+                    { speaker: "QA", text: "Si no lo escribes, no existe." }
+                ],
+                bullets: ["Requisitos claros", "Priorizar funcionalidades", "Validar con el cliente"],
+                risk: "Sin analisis, construyes el producto equivocado."
+            },
+            {
+                title: "E3 Diseno",
+                subtitle: "Arquitectura con estilo",
+                panels: [
+                    { speaker: "ARQ", text: "Aqui definimos la estructura." },
+                    { speaker: "DEV", text: "Si lo veo, lo codeo mejor." },
+                    { speaker: "BUG", text: "Me escondo en decisiones ambiguas." }
+                ],
+                bullets: ["Diseno de arquitectura", "UX y flujo claros", "Tecnologias definidas"],
+                risk: "Sin diseno, el codigo es un laberinto."
+            },
+            {
+                title: "E4 Implementacion",
+                subtitle: "Codigo y cafe",
+                panels: [
+                    { speaker: "DEV", text: "Cafe + teclado = magia." },
+                    { speaker: "QA", text: "Yo ya vi ese bug venir." },
+                    { speaker: "BUG", text: "Shhh, estoy en la linea 42." }
+                ],
+                bullets: ["Construir segun el diseno", "Versionar cambios", "Revisiones de codigo"],
+                risk: "Sin disciplina, el codigo se convierte en telenovela."
+            },
+            {
+                title: "E5 Pruebas",
+                subtitle: "QA al acecho",
+                panels: [
+                    { speaker: "QA", text: "Hola, vengo por tu bug." },
+                    { speaker: "DEV", text: "Pero en mi maquina funciona." },
+                    { speaker: "BUG", text: "Yo tambien uso prod." }
+                ],
+                bullets: ["Pruebas unitarias y de integracion", "Validar escenarios reales", "Automatizar cuando sea posible"],
+                risk: "Sin pruebas, el despliegue es ruleta rusa."
+            },
+            {
+                title: "E6 Despliegue",
+                subtitle: "Lanzamiento mundial",
+                panels: [
+                    { speaker: "DEV", text: "Voy a deployar un viernes." },
+                    { speaker: "QA", text: "No lo hagas." },
+                    { speaker: "CLIENTE", text: "Ya lo publique en redes." }
+                ],
+                bullets: ["Release controlado", "Monitoreo activo", "Plan de rollback"],
+                risk: "Sin despliegue ordenado, el estreno es caos."
+            },
+            {
+                title: "E7 Mantenimiento",
+                subtitle: "Post-creditos",
+                panels: [
+                    { speaker: "CLIENTE", text: "Otra idea, otro cambio." },
+                    { speaker: "DEV", text: "Iteremos con calma." },
+                    { speaker: "BUG", text: "Yo nunca me voy." }
+                ],
+                bullets: ["Soporte y mejoras", "Correcciones continuas", "Feedback real"],
+                risk: "Sin mantenimiento, el software envejece mal."
+            }
+        ];
+
+        const modal = document.getElementById("modal");
+        const modalTitle = document.getElementById("modalTitle");
+        const modalBody = document.getElementById("modalBody");
+        const modalClose = document.getElementById("modalClose");
+        const nextEpisodeBtn = document.getElementById("nextEpisode");
+        let currentEpisode = 0;
+        let currentPanel = 0;
+
+        function openModal() {
+            modal.classList.remove("hidden");
+            modal.setAttribute("aria-hidden", "false");
+            document.documentElement.style.overflow = "hidden";
+            body.classList.add("modal-open");
+        }
+
+        function closeModal() {
+            body.classList.remove("modal-open");
+            modal.setAttribute("aria-hidden", "true");
+            const hide = () => {
+                modal.classList.add("hidden");
+                document.documentElement.style.overflow = "";
+            };
+            if (prefersReducedMotion) {
+                hide();
+            } else {
+                setTimeout(hide, 350);
+            }
+        }
+
+        function renderEpisode(index) {
+            currentEpisode = index;
+            currentPanel = 0;
+            const ep = episodes[index];
+            modalTitle.textContent = `${ep.title} - ${ep.subtitle}`;
+
+            const bullets = ep.bullets.map(item => `<li>${item}</li>`).join("");
+
+            modalBody.innerHTML = `
+                <div class="space-y-4">
+                    <div id="comicPanel" class="comic-panel rounded-xl p-4 panel-transition">
+                        <div class="flex items-center gap-2">
+                            <div class="comic-avatar"></div>
+                            <div id="comicSpeaker" class="text-xs text-slate-400"></div>
+                        </div>
+                        <p id="comicText" class="mt-2 bubble-pop"></p>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button id="nextPanelBtn" class="px-4 py-2 rounded-full bg-white/10 border border-slate-700" aria-label="Siguiente panel">Siguiente panel</button>
+                        <span id="panelCounter" class="text-xs text-slate-400"></span>
+                    </div>
+                </div>
+                <div>
+                    <h5 class="font-semibold">Lo que realmente pasa en esta fase</h5>
+                    <ul class="list-disc pl-5 mt-2 text-slate-300">${bullets}</ul>
+                    <p class="mt-4 text-sm text-rose-300">Riesgo si te la saltas: ${ep.risk}</p>
+                </div>
+            `;
+
+            function updateComicPanel() {
+                const speaker = document.getElementById("comicSpeaker");
+                const textEl = document.getElementById("comicText");
+                const counter = document.getElementById("panelCounter");
+                const panel = ep.panels[currentPanel];
+                speaker.textContent = panel.speaker;
+                textEl.textContent = panel.text;
+                textEl.classList.remove("bubble-pop");
+                void textEl.offsetWidth;
+                textEl.classList.add("bubble-pop");
+                counter.textContent = `${currentPanel + 1}/${ep.panels.length}`;
+            }
+
+            const nextPanelBtn = document.getElementById("nextPanelBtn");
+            const panelEl = document.getElementById("comicPanel");
+            nextPanelBtn.addEventListener("click", () => {
+                panelEl.classList.add("panel-hidden");
+                const swap = () => {
+                    currentPanel = (currentPanel + 1) % ep.panels.length;
+                    updateComicPanel();
+                    panelEl.classList.remove("panel-hidden");
+                };
+                if (prefersReducedMotion) {
+                    swap();
+                } else {
+                    setTimeout(swap, 200);
+                }
+            });
+
+            updateComicPanel();
+            nextEpisodeBtn.style.display = "inline-flex";
+            openModal();
+        }
+
+        function renderTrailer() {
+            modalTitle.textContent = "Trailer: El Viaje del Software";
+            modalBody.innerHTML = `
+                <div class="rounded-2xl bg-slate-900 border border-slate-800 p-6">
+                    <p class="text-sm text-slate-400">Narrador:</p>
+                    <p class="mt-2">En un mundo donde los bugs se multiplican, un equipo aprende el poder del SDLC...</p>
+                    <div class="mt-4 grid sm:grid-cols-3 gap-4">
+                        <div class="p-3 rounded-xl bg-slate-950">Explosion de requisitos</div>
+                        <div class="p-3 rounded-xl bg-slate-950">QA en camara lenta</div>
+                        <div class="p-3 rounded-xl bg-slate-950">Deploy con suspenso</div>
+                    </div>
+                </div>
+            `;
+            nextEpisodeBtn.style.display = "none";
+            openModal();
+        }
+
+        document.querySelectorAll(".episode-card").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const index = Number(btn.getAttribute("data-episode"));
+                renderEpisode(index);
+            });
+        });
+
+        document.querySelectorAll(".model-card").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const model = btn.getAttribute("data-model");
+                modalTitle.textContent = `Modelo ${model}`;
+                modalBody.innerHTML = `
+                    <div class="rounded-2xl bg-slate-900 border border-slate-800 p-6 space-y-3">
+                        <p>${model} es una temporada alternativa donde el ritmo cambia. Cada modelo tiene fortalezas y trampas.</p>
+                        <ul class="list-disc pl-5 text-slate-300">
+                            <li>Si hay alta certeza: Cascada o V.</li>
+                            <li>Si hay cambios: Iterativo o Espiral.</li>
+                            <li>Si hay improvisacion: Big Bang (bajo tu riesgo).</li>
+                        </ul>
+                    </div>
+                `;
+                nextEpisodeBtn.style.display = "none";
+                openModal();
+            });
+        });
+
+        document.getElementById("openAllEpisodes").addEventListener("click", () => renderEpisode(0));
+        document.getElementById("playBtn").addEventListener("click", () => renderEpisode(0));
+        document.getElementById("trailerBtn").addEventListener("click", renderTrailer);
+        nextEpisodeBtn.addEventListener("click", () => {
+            const next = (currentEpisode + 1) % episodes.length;
+            renderEpisode(next);
+        });
+        modalClose.addEventListener("click", closeModal);
+        modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+        window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+        // Minigame
+        let selectedModel = "";
+        const decisions = { docs: null, tests: null };
+        const scoreBar = document.getElementById("scoreBar");
+        const scoreLabel = document.getElementById("scoreLabel");
+        const scoreText = document.getElementById("scoreText");
+        const confettiStage = document.getElementById("confettiStage");
+
+        document.querySelectorAll(".model-select").forEach(btn => {
+            btn.addEventListener("click", () => {
+                selectedModel = btn.getAttribute("data-model");
+                document.querySelectorAll(".model-select").forEach(b => b.classList.remove("border-brand-gold"));
+                btn.classList.add("border-brand-gold");
+            });
+        });
+
+        document.querySelectorAll(".decision-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const key = btn.getAttribute("data-decision");
+                const value = btn.getAttribute("data-value");
+                decisions[key] = value;
+                document.querySelectorAll(`.decision-btn[data-decision='${key}']`).forEach(b => b.classList.remove("border-brand-gold"));
+                btn.classList.add("border-brand-gold");
+            });
+        });
+
+        function launchConfetti() {
+            if (!confettiStage || prefersReducedMotion) return;
+            confettiStage.innerHTML = "";
+            const total = 160;
+            const colors = ["#22d3ee", "#f59e0b", "#f43f5e", "#10b981", "#0a4f8f"];
+            const frag = document.createDocumentFragment();
+            for (let i = 0; i < total; i += 1) {
+                const piece = document.createElement("span");
+                piece.className = "confetti-piece";
+                const left = Math.random() * 100;
+                const drift = (Math.random() - 0.5) * 200;
+                const fall = 2 + Math.random() * 2.2;
+                piece.style.left = `${left}%`;
+                piece.style.background = colors[i % colors.length];
+                piece.style.setProperty("--drift", `${drift}px`);
+                piece.style.setProperty("--fall", `${fall}s`);
+                piece.style.transform = `translate3d(0, -20px, 0)`;
+                frag.appendChild(piece);
+            }
+            confettiStage.appendChild(frag);
+            setTimeout(() => { confettiStage.innerHTML = ""; }, 3200);
+        }
+
+        function animateScore(target) {
+            const start = 0;
+            const duration = prefersReducedMotion ? 0 : 900;
+            const startTime = performance.now();
+            function tick(now) {
+                const progress = duration ? Math.min((now - startTime) / duration, 1) : 1;
+                const ease = 1 - Math.pow(1 - progress, 3);
+                const value = Math.round(start + (target - start) * ease);
+                scoreLabel.textContent = value;
+                if (progress < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        document.getElementById("runGame").addEventListener("click", () => {
+            if (!selectedModel) {
+                scoreText.textContent = "Elige un modelo antes de iniciar la temporada.";
+                return;
+            }
+
+            const base = { "Cascada": 60, "Iterativo": 72, "Espiral": 80, "V": 75, "Big Bang": 35 }[selectedModel] || 50;
+            let score = base;
+
+            score += decisions.docs === "yes" ? 10 : -10;
+            score += decisions.tests === "yes" ? 15 : -20;
+
+            if (selectedModel === "Big Bang" && decisions.docs === "no" && decisions.tests === "no") {
+                score -= 15;
+            }
+
+            score = Math.max(0, Math.min(100, score));
+            scoreBar.style.width = `${score}%`;
+            animateScore(score);
+
+            if (score >= 80) {
+                scoreText.textContent = `Hit total. ${selectedModel} con buenas decisiones y el bug se rinde.`;
+                launchConfetti();
+            } else if (score >= 55) {
+                scoreText.textContent = `Temporada estable. ${selectedModel} sobrevive con ajustes y cafe.`;
+                if (confettiStage) confettiStage.innerHTML = "";
+            } else {
+                scoreText.textContent = `Cancelada. El modelo ${selectedModel} exploto por malas decisiones.`;
+                if (confettiStage) confettiStage.innerHTML = "";
+            }
+        });
+
+        // Timeline cursor
+        const timelineItems = document.querySelectorAll(".timeline-item");
+        const cursor = document.getElementById("timelineCursor");
+
+        function moveCursor(target) {
+            const rect = target.getBoundingClientRect();
+            const parentRect = target.parentElement.getBoundingClientRect();
+            const left = rect.left - parentRect.left + rect.width / 2 - 12;
+            cursor.style.left = `${left}px`;
+            timelineItems.forEach(item => item.classList.remove("active"));
+            target.classList.add("active");
+        }
+
+        timelineItems.forEach(item => {
+            item.addEventListener("mouseenter", () => moveCursor(item));
+            item.addEventListener("click", () => moveCursor(item));
+        });
+        moveCursor(timelineItems[0]);
+
+        // Scroll reveal
+        document.querySelectorAll("[data-stagger]").forEach(container => {
+            Array.from(container.children).forEach(child => {
+                child.classList.add("fade-up");
+            });
+        });
+
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const target = entry.target;
+                if (target.hasAttribute("data-stagger")) {
+                    Array.from(target.children).forEach((child, index) => {
+                        child.style.transitionDelay = `${index * 60}ms`;
+                        child.classList.add("is-visible");
+                    });
+                }
+                target.classList.add("is-visible");
+                revealObserver.unobserve(target);
+            });
+        }, { threshold: 0.2 });
+
+        document.querySelectorAll(".reveal, [data-stagger]").forEach(el => revealObserver.observe(el));
+
+        // Bars animation on reveal
+        const barWraps = document.querySelectorAll(".bar-wrapper");
+        const widthMap = { "w-1/5": "20%", "w-2/5": "40%", "w-4/5": "80%" };
+        barWraps.forEach(wrap => {
+            const bar = wrap.querySelector(".bar");
+            if (!bar) return;
+            const cls = Object.keys(widthMap).find(key => bar.classList.contains(key));
+            bar.dataset.target = widthMap[cls] || "50%";
+            bar.style.width = "0%";
+        });
+
+        const barObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const bar = entry.target.querySelector(".bar");
+                if (bar) {
+                    bar.style.width = bar.dataset.target || "50%";
+                }
+                if (entry.target.id === "prodBarWrap") {
+                    entry.target.classList.add("bar-ouch");
+                    const ouchText = document.getElementById("ouchText");
+                    if (ouchText) ouchText.style.opacity = "1";
+                }
+                barObserver.unobserve(entry.target);
+            });
+        }, { threshold: 0.4 });
+
+        barWraps.forEach(wrap => barObserver.observe(wrap));
+
+        // Search Easter egg
+        const searchInput = document.getElementById("searchInput");
+        const bugFloat = document.getElementById("bugFloat");
+        const bugChase = document.getElementById("bugChase");
+
+        function moveBug() {
+            if (!bugFloat) return;
+            const padding = 24;
+            const x = Math.random() * (window.innerWidth - 200 - padding);
+            const y = Math.random() * (window.innerHeight - 80 - padding);
+            bugFloat.style.transform = `translate(${Math.max(padding, x)}px, ${Math.max(padding, y)}px)`;
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener("input", () => {
+                if (searchInput.value.toLowerCase().includes("bug")) {
+                    bugFloat?.classList.add("active");
+                    moveBug();
+                }
+            });
+        }
+
+        bugChase?.addEventListener("click", () => {
+            moveBug();
+        });
+
+        // Retro mode (click title 5 times)
+        const titleClick = document.getElementById("titleClick");
+        let clickCount = 0;
+        titleClick.addEventListener("click", () => {
+            clickCount += 1;
+            if (clickCount >= 5) {
+                body.classList.toggle("retro");
+                clickCount = 0;
+            }
+        });
+
+        // Hero parallax
+        const heroGlow = document.getElementById("heroGlow");
+        if (!prefersReducedMotion) {
+            window.addEventListener("mousemove", (e) => {
+                const x = (e.clientX / window.innerWidth - 0.5) * 40;
+                const y = (e.clientY / window.innerHeight - 0.5) * 40;
+                heroGlow.style.transform = `translate(${x}px, ${y}px)`;
+            });
+        }
+
+        // Back to top / print
+        document.getElementById("backToTop")?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+        document.getElementById("printBtn")?.addEventListener("click", () => window.print());
+
+        const cinemaBars = document.getElementById("cinemaBars");
+
+        // Keyboard shortcut
+        window.addEventListener("keydown", (e) => {
+            const key = e.key.toLowerCase();
+            if (e.ctrlKey && key === "k") {
+                e.preventDefault();
+                searchInput?.focus();
+            }
+            if (!e.ctrlKey && !e.metaKey && key === "c") {
+                const activeTag = document.activeElement?.tagName || "";
+                if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+                body.classList.toggle("cinema-mode");
+                cinemaBars?.classList.toggle("active");
+            }
+        });
+    </script>
+</body>
+</html>
